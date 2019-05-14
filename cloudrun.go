@@ -5,30 +5,39 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
 	log.Print("Hello world received a request.")
 	target := os.Getenv("TARGET")
 	if target == "" {
-		target = "World"
+		target = "Run"
 	}
-	fmt.Fprintf(w, "Hello %s!\n", target)
+
+	for k, v := range r.Header {
+		log.Printf("%s:%v\n", k, v)
+	}
+
+	w.Header().Set("cache-control", "public, max-age=3600")
+
+	fmt.Fprintf(w, "Hello %s! %+v\n", target, time.Now())
 }
 
-func handler2(w http.ResponseWriter, r *http.Request) {
+func handlerNocache(w http.ResponseWriter, r *http.Request) {
 	log.Print("Hello world received a request.")
 	target := os.Getenv("TARGET")
 	if target == "" {
-		target = "World"
+		target = "Run"
 	}
-	fmt.Fprintf(w, "Hello 2 %s!\n", target)
+	w.Header().Set("cache-control", "private")
+	fmt.Fprintf(w, "Hello %s Nocache %+v!\n", target, time.Now())
 }
 
 func main() {
 	log.Print("Hello world sample started.")
+	http.HandleFunc("/hellorun/nocache", handlerNocache)
 	http.HandleFunc("/", handler)
-	http.HandleFunc("/hoge", handler2)
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
